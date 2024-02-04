@@ -1,0 +1,52 @@
+---
+- name: 'Установка и настройка prometheus'
+  hosts: all
+  become: yes
+  tasks:
+    - name: 'Копирование скрипта установки'
+      copy:
+        src: ./install_prometheus.sh
+        dest: /home/install_prometheus.sh
+        mode: 0755
+    - name: 'Запускаем shell скрипт'
+      shell: bash /home/install_prometheus.sh
+    - name: 'Копирование конфига prometheus'
+      copy:
+        src: ./prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+    - name: 'Копирование файла сервиса prometheus'
+      copy: 
+        src: ./prometheus.service
+        dest: /etc/systemd/system/prometheus.service
+    - name: 'Запускаем службу'
+      systemd: 
+        daemon_reload: true    
+        name: prometheus
+        state: started
+        enabled: yes
+    - name: 'Копирование скрипта для node_export'
+      copy: 
+        src: ./node_exporter.sh
+        dest: /home/node_exporter.sh
+    - name: 'Запускаем shell скрипт'
+      shell: bash /home/node_exporter.sh
+    - name: 'Копируем графану'
+      copy:
+        src: ./grafana_enterprise_9.5.2_1.x86_64-364648-5d442e.rpm
+        dest: /home/grafana_enterprise_9.5.2_1.x86_64-364648-5d442e.rpm
+    - name: 'Устанавливаем grafana'
+      shell: cd /home && yum -y install grafana_enterprise_9.5.2_1.x86_64-364648-5d442e.rpm
+    - name: 'Запускаем службу'
+      systemd:
+        daemon_reload: true
+        name: grafana-server
+        state: started
+        enabled: yes
+    - name: 'Останавливаем firewalld'
+      systemd: 
+        name: firewalld
+        state: stopped
+        enabled: no
+
